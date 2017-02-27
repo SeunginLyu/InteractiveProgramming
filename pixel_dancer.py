@@ -12,9 +12,9 @@ class Grid:
         self.rect.x = x
 
 class Background:
-    def __init__(self,name,place):
+    def __init__(self,name):
         self.pic = pygame.image.load(name)
-        self.place = place
+        print (self.pic.get_rect().size)
 
 class PygameKeyboardController:
     def __init__(self,model):
@@ -37,18 +37,18 @@ class Player:
 def main():
     pygame.init()
     pygame.display.set_caption('Artist')
-    screen = pygame.display.set_mode([800,600])
+    bg = Background('square.jpg')
+    canvas_size = bg.pic.get_rect().size
+    screen = pygame.display.set_mode(canvas_size)
     done = False
     while not done:
 
         for event in pygame.event.get():   # User did something
             if event.type == pygame.QUIT:  # If user clicked close
                 done = True   # Flag that we are done so we exit this loop
+        screen.blit(bg.pic,(0,0))
 
-        bg = Background('starry_night.jpg',(50,150))
-        screen.blit(bg.pic,bg.place)
-
-        player = Player('player.png',(50,300))
+        player = Player('player.png',(canvas_size[0]*3/5,canvas_size[1]*3/5))
         screen.blit(player.pic,player.place)
         pygame.display.flip()
     pygame.quit()
