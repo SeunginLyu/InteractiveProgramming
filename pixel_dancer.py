@@ -48,14 +48,11 @@ class GridListViewer(object):
         num_cols = grid_list.num_cols
         for i in range(num_rows):
             for j in range(num_cols):
-                grid = grid_list[i, j]
-                screen.blit(grid.)
-                '''
                 grid = grid_list.gridlist[i, j]
-                grid_box = pygame.Rect(grid.location[0], grid.location[1],
-                                       grid.length, grid.width)
-                pygame.draw.rect(screen, grid.color, grid_box, 100)
-                '''
+                image = pygame.Surface([grid.length, grid.width])
+                image.fill(grid.color)
+                if(i == 1):
+                    screen.blit(image, grid.location)
 
 
 class Background:
@@ -91,7 +88,6 @@ def main():
 
     grid = GridList(3, 3, canvas_size)  # 3 by 3 gridlist
     print(grid.gridlist)
-    grid_viewer = GridListViewer(screen, grid)
     done = False
     while not done:
 
@@ -102,6 +98,7 @@ def main():
 
         player = Player('player.png',(canvas_size[0]*3/5,canvas_size[1]*3/5))
         screen.blit(player.pic,player.place)
+        grid_viewer = GridListViewer(screen, grid)
         pygame.display.flip()
     pygame.quit()
 
