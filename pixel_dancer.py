@@ -139,11 +139,12 @@ class MessageViewer:
 
 
 def main():
+    # initializing pygame
     pygame.init()
 
     # Game Settings
     pygame.display.set_caption('PIXEL DANCER')
-    # initializing background / detriming canvas_size
+    # initializing background / determining canvas_size
     bg = Background('square.jpg')
     canvas_size = bg.pic.get_rect().size
 
@@ -154,6 +155,7 @@ def main():
     screen = pygame.display.set_mode(canvas_size)
     grid = GridList(NUM_X, NUM_Y, canvas_size)
     clock = pygame.time.Clock()
+
     running = True
     while running:
         #  checks exteral inputs
@@ -163,7 +165,7 @@ def main():
             if event.type == pygame.KEYDOWN:
                 player_controller = PlayerKeyController(event, player, grid)
 
-        # initializes viewers
+        # initializing viewers
         background_viewer = BackgroundViewer(screen, bg)
         grid_viewer = GridListViewer(screen, grid)
         player_viewer = PlayerViewer(screen, player, grid)
