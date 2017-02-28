@@ -6,19 +6,24 @@ BLACK = (0, 0, 0)
 
 
 class Grid(object):
-    def __init__(self, row, col, location, length, width, color=BLACK):
+    def __init__(self, row, col, location, length, width, color=BLACK,
+                 alpha=200):
         self.row = row  # row number in a gridlist
         self.col = col  # col number in a gridlist
         self.length = length
         self.width = width
         self.location = location  # absolute location (pixels)
         self.color = color
+        self.alpha = alpha  # transparency
 
     def __repr__(self):
-        # return str(self.row) + str(self.col)
-        return str(self.location[0]) + ',' + str(self.location[1])
+        return str(self.row) + str(self.col)
+        # return str(self.location[0]) + ',' + str(self.location[1])
 
     def update_grid_color(self, color):
+        self.color = color
+
+    def update_grid_alpha(self, color):
         self.color = color
 
 
@@ -33,8 +38,8 @@ class GridList(object):
         for i in range(num_rows):
             grid_row = []
             for j in range(num_cols):
-                location_x = int((grid_size[0] / num_rows) * i)
-                location_y = int((grid_size[1] / num_cols) * j)
+                location_x = int((grid_size[1] / num_cols) * j)
+                location_y = int((grid_size[0] / num_rows) * i)
                 location = (location_x, location_y)
                 new_grid = Grid(i, j, location, length, width)
                 grid_row.append(new_grid)
@@ -46,13 +51,13 @@ class GridListViewer(object):
     def __init__(self, screen, grid_list):
         num_rows = grid_list.num_rows
         num_cols = grid_list.num_cols
-        for i in range(num_rows):
-            for j in range(num_cols):
-                grid = grid_list.gridlist[i, j]
+        for i in range(num_cols):
+            for j in range(num_rows):
+                grid = grid_list.gridlist[j, i]
                 image = pygame.Surface([grid.length, grid.width])
+                image.set_alpha(grid.alpha)
                 image.fill(grid.color)
-                if(i == 1):
-                    screen.blit(image, grid.location)
+                screen.blit(image, grid.location)
 
 
 class Background:
@@ -85,8 +90,7 @@ def main():
     bg = Background('square.jpg')
     canvas_size = bg.pic.get_rect().size
     screen = pygame.display.set_mode(canvas_size)
-
-    grid = GridList(3, 3, canvas_size)  # 3 by 3 gridlist
+    grid = GridList(3, 3, canvas_size)  # row n by col n gridlist
     print(grid.gridlist)
     done = False
     while not done:
@@ -94,10 +98,9 @@ def main():
         for event in pygame.event.get():   # User did something
             if event.type == pygame.QUIT:  # If user clicked close
                 done = True   # Flag that we are done so we exit this loop
-        screen.blit(bg.pic,(0,0))
-
-        player = Player('player.png',(canvas_size[0]*3/5,canvas_size[1]*3/5))
-        screen.blit(player.pic,player.place)
+        screen.blit(bg.pic, (0, 0))
+        player = Player('player.png', (canvas_size[0]*3/5, canvas_size[1]*3/5))
+        screen.blit(player.pic, player.place)
         grid_viewer = GridListViewer(screen, grid)
         pygame.display.flip()
     pygame.quit()
