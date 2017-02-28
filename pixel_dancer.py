@@ -1,20 +1,68 @@
 import pygame
+import numpy
 
-WHITE = (255,255,255)
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
 
-class Grid:
-    def __init__(self,x,y,width,height,color):
-        self.image = pygame.Surface([width,height])
-        self.image.fill(color)
 
-        self.rect = self.image.get_rect()
-        self.rect.y = y
-        self.rect.x = x
+class Grid(object):
+    def __init__(self, row, col, location, length, width, color=BLACK):
+        self.row = row  # row number in a gridlist
+        self.col = col  # col number in a gridlist
+        self.length = length
+        self.width = width
+        self.location = location  # absolute location (pixels)
+        self.color = color
+
+    def __repr__(self):
+        # return str(self.row) + str(self.col)
+        return str(self.location[0]) + ',' + str(self.location[1])
+
+    def update_grid_color(self, color):
+        self.color = color
+
+
+class GridList(object):
+    def __init__(self, num_rows, num_cols, grid_size):
+        self.num_rows = num_rows
+        self.num_cols = num_cols
+        self.grid_size = grid_size
+        length = grid_size[0] / num_cols  # length of individual grid
+        width = grid_size[1] / num_rows  # width of individual grid
+        grid = []
+        for i in range(num_rows):
+            grid_row = []
+            for j in range(num_cols):
+                location_x = int((grid_size[0] / num_rows) * i)
+                location_y = int((grid_size[1] / num_cols) * j)
+                location = (location_x, location_y)
+                new_grid = Grid(i, j, location, length, width)
+                grid_row.append(new_grid)
+            grid.append(grid_row)
+        self.gridlist = numpy.array(grid)
+
+
+class GridListViewer(object):
+    def __init__(self, screen, grid_list):
+        num_rows = grid_list.num_rows
+        num_cols = grid_list.num_cols
+        for i in range(num_rows):
+            for j in range(num_cols):
+                grid = grid_list[i, j]
+                screen.blit(grid.)
+                '''
+                grid = grid_list.gridlist[i, j]
+                grid_box = pygame.Rect(grid.location[0], grid.location[1],
+                                       grid.length, grid.width)
+                pygame.draw.rect(screen, grid.color, grid_box, 100)
+                '''
+
 
 class Background:
     def __init__(self,name):
         self.pic = pygame.image.load(name)
         print (self.pic.get_rect().size)
+
 
 class PygameKeyboardController:
     def __init__(self,model):
@@ -40,6 +88,10 @@ def main():
     bg = Background('square.jpg')
     canvas_size = bg.pic.get_rect().size
     screen = pygame.display.set_mode(canvas_size)
+
+    grid = GridList(3, 3, canvas_size)  # 3 by 3 gridlist
+    print(grid.gridlist)
+    grid_viewer = GridListViewer(screen, grid)
     done = False
     while not done:
 
