@@ -130,12 +130,19 @@ class PlayerViewer:
         screen.blit(player.pic, player.get_absolute_location(grid.gridlist))
 
 
+class MessageViewer:
+    def __init__(self, screen, font, font_size, message, msg_location,
+                 color=WHITE):
+        myfont = pygame.font.SysFont(font, font_size, True)
+        label = myfont.render(message, True, color)
+        screen.blit(label, msg_location)
+
+
 def main():
     pygame.init()
 
-    # Game Display Title : Pixel Dancer
+    # Game Settings
     pygame.display.set_caption('PIXEL DANCER')
-
     # initializing background / detriming canvas_size
     bg = Background('square.jpg')
     canvas_size = bg.pic.get_rect().size
@@ -160,11 +167,13 @@ def main():
         background_viewer = BackgroundViewer(screen, bg)
         grid_viewer = GridListViewer(screen, grid)
         player_viewer = PlayerViewer(screen, player, grid)
-        #  when all grids are colored with alpha value 0
-        if grid.colored_grid_count == TOTAL_GRID:
-            myfont = pygame.font.SysFont("norasi", 50, True)
-            label = myfont.render("THIS IS NOT OVER!", True, WHITE)
-            screen.blit(label, (50, 80))
+        if grid.colored_grid_count == TOTAL_GRID:  # when all grids are colored
+            font = "norasi"
+            font_size = 50
+            msg = "THIS IS NOT OVER"
+            msg_location = (50, 80)
+            end_message_viewer = MessageViewer(screen, font, font_size, msg,
+                                               msg_location)
         clock.tick(60)
         pygame.display.flip()
     pygame.quit()
