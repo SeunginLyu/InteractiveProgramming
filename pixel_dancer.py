@@ -12,8 +12,8 @@ TOTAL_GRID = NUM_X * NUM_Y
 class Grid(object):
     def __init__(self, row, col, location, length, width, color=BLACK,
                  alpha=256):
-        self.row = row  # row number in a gridlist
-        self.col = col  # col number in a gridlist
+        self.row = row  # relative row number in a gridlist
+        self.col = col  # relative col number in a gridlist
         self.length = length
         self.width = width
         self.location = location  # absolute location (pixels)
@@ -138,6 +138,19 @@ class MessageViewer:
         screen.blit(label, msg_location)
 
 
+class RhythmViewer:
+    def __init__(self, screen, rhythm):
+        screen_size = screen.get_rect().size
+
+        # drawing line
+        line_start = (0, screen_size[1]-50)
+        line_end = (screen_size[0], screen_size[1]-50)
+        line_width = 3
+        pygame.draw.line(screen, WHITE, line_start, line_end, line_width)
+
+        # drawing two circles
+
+
 def main():
     # initializing pygame
     pygame.init()
@@ -147,12 +160,13 @@ def main():
     # initializing background / determining canvas_size
     bg = Background('square.jpg')
     canvas_size = bg.pic.get_rect().size
-
+    canvas_size2 = (canvas_size[0], canvas_size[1]+100)
     # initializing player
     player = Player('player.png', (0, 0))
 
     # initializing screen & grid & clock
     screen = pygame.display.set_mode(canvas_size)
+    rhythm_screen = pygame.display.set_mode(canvas_size2)
     grid = GridList(NUM_X, NUM_Y, canvas_size)
     clock = pygame.time.Clock()
 
@@ -169,6 +183,7 @@ def main():
         background_viewer = BackgroundViewer(screen, bg)
         grid_viewer = GridListViewer(screen, grid)
         player_viewer = PlayerViewer(screen, player, grid)
+        rhythm_viewer = RhythmViewer(rhythm_screen, 10)
         if grid.colored_grid_count == TOTAL_GRID:  # when all grids are colored
             font = "norasi"
             font_size = 50
