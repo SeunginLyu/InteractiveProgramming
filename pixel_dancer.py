@@ -4,6 +4,7 @@ import numpy
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
+RED = (255, 0, 0)
 NUM_X = 6
 NUM_Y = 6
 TOTAL_GRID = NUM_X * NUM_Y
@@ -147,16 +148,34 @@ class MessageViewer:
 
 
 class RhythmViewer:
-    def __init__(self, screen, rhythm):
+    def __init__(self, screen, rhythm, loop_num, marginal_error):
         screen_size = screen.get_rect().size
-
+        image = pygame.Surface(screen_size)
         # drawing line
         line_start = (0, screen_size[1]-50)
         line_end = (screen_size[0], screen_size[1]-50)
         line_width = 3
-        pygame.draw.line(screen, WHITE, line_start, line_end, line_width)
+        pygame.draw.line(image, WHITE, line_start, line_end, line_width)
 
         # drawing two circles
+        radius = 40
+        dx = (screen_size[0] - 2*radius) / rhythm / 2
+        pos = (int(line_start[0]+radius+dx*(loop_num % rhythm)), line_start[1])
+        pos2 = (int(screen_size[0]-radius-dx*(loop_num % rhythm)),
+                line_start[1])
+        center = int(screen_size[0] / 2)
+        if(abs(pos[0] - center) <= marginal_error/10 * dx):
+            color = RED
+            width = 6
+        elif(abs(pos[0] - center) < marginal_error*dx):
+            color = BLUE
+            width = 6
+        else:
+            color = WHITE
+            width = 3
+        pygame.draw.circle(image, color, pos, radius, width)
+        pygame.draw.circle(image, color, pos2, radius, width)
+        screen.blit(image, (0, 0))
 
 
 def main():
@@ -195,15 +214,18 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
-                is_matching = BeatHandler(loop_num, BEAT_CONST, MARGINAL_ERROR).flag
+                is_matching = BeatHandler(loop_num, BEAT_CONST,
+                                          MARGINAL_ERROR).flag
                 player_controller = PlayerKeyController(event, player, grid,
                                                         is_matching)
 
         # initializing viewers
+        rhythm_viewer = RhythmViewer(rhythm_screen, BEAT_CONST, loop_num,
+                                     MARGINAL_ERROR)
         background_viewer = BackgroundViewer(screen, bg)
         grid_viewer = GridListViewer(screen, grid)
         player_viewer = PlayerViewer(screen, player, grid)
-        rhythm_viewer = RhythmViewer(rhythm_screen, 10)
+
         if grid.colored_grid_count == TOTAL_GRID:  # when all grids are colored
             font = "norasi"
             font_size = 50
