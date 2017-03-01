@@ -102,7 +102,7 @@ class Player:
             y = 0
         if gridlist[x][y].alpha == 256 and not beat:
             gridlist[x][y].alpha /= 2
-        elif gridlist[x][y].alpha != 0 or beat:
+        elif (gridlist[x][y].alpha == 256 and beat) or (gridlist[x][y].alpha != 0 and gridlist[x][y].alpha != 256):
             gridlist[x][y].alpha = 0
             grid.colored_grid_count += 1
         self.place = (x, y)
@@ -123,6 +123,14 @@ class PlayerKeyController():
             player.move(-1, 0, grid, beat)
         if event.key == pygame.K_DOWN:
             player.move(1, 0, grid, beat)
+
+
+class BeatHandler():
+    def __init__(self, loop_num, BEAT_CONST, MARGINAL_ERROR):
+        if (loop_num % BEAT_CONST) < MARGINAL_ERROR or (BEAT_CONST-loop_num % BEAT_CONST) < MARGINAL_ERROR:
+            self.flag = True
+        else:
+            self.flag = False
 
 
 class PlayerViewer:
@@ -152,6 +160,7 @@ class RhythmViewer:
 
 
 def main():
+
     # initializing pygame
     pygame.init()
 
@@ -168,15 +177,17 @@ def main():
     screen = pygame.display.set_mode(canvas_size)
     rhythm_screen = pygame.display.set_mode(canvas_size2)
     grid = GridList(NUM_X, NUM_Y, canvas_size)
-    clock = pygame.time.Clock()
-    FPS = 60
-    loop_num = 0
-    is_following = True
 
-    #Plays background music, BPM is about 110
+    clock = pygame.time.Clock()
+    FPS = 60  # 60 frames(while loops) per second
+    loop_num = 0
+
+    # plays background music, BPM is about 110
     pygame.mixer.music.load('Ghost_fight.mp3')
     pygame.mixer.music.play(-1)
-
+    BEAT_CONST = 64  # arbitrary Frames/second value proportional to BPM
+    MARGINAL_ERROR = 10  # 10 frames
+    is_matching = True
     running = True
     while running:
         #  checks exteral inputs
@@ -184,11 +195,9 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
-                if (loop_num % 64)<10 or (64- loop_num%64)<10:
-                    is_following = True
-                else:
-                    is_following = False
-                player_controller = PlayerKeyController(event, player, grid,is_following)
+                is_matching = BeatHandler(loop_num, BEAT_CONST, MARGINAL_ERROR).flag
+                player_controller = PlayerKeyController(event, player, grid,
+                                                        is_matching)
 
         # initializing viewers
         background_viewer = BackgroundViewer(screen, bg)
