@@ -87,7 +87,7 @@ class Player:
         self.place = (place[0], place[1])
         self.flipped = False
 
-    def move(self, dx, dy, grid):
+    def move(self, dx, dy, grid, beat):
         gridlist = grid.gridlist
         x = self.place[0]+dx
         y = self.place[1]+dy
@@ -100,9 +100,9 @@ class Player:
         if x < 0 or x >= NUM_X or y < 0 or y >= NUM_Y:
             x = 0
             y = 0
-        if gridlist[x][y].alpha == 256:
+        if gridlist[x][y].alpha == 256 and not beat:
             gridlist[x][y].alpha /= 2
-        elif gridlist[x][y].alpha != 0:
+        elif gridlist[x][y].alpha != 0 or beat:
             gridlist[x][y].alpha = 0
             grid.colored_grid_count += 1
         self.place = (x, y)
@@ -114,15 +114,15 @@ class Player:
 
 
 class PlayerKeyController():
-    def __init__(self, event, player, grid):
+    def __init__(self, event, player, grid, beat):
         if event.key == pygame.K_RIGHT:
-            player.move(0, 1, grid)
+            player.move(0, 1, grid, beat)
         if event.key == pygame.K_LEFT:
-            player.move(0, -1, grid)
+            player.move(0, -1, grid, beat)
         if event.key == pygame.K_UP:
-            player.move(-1, 0, grid)
+            player.move(-1, 0, grid, beat)
         if event.key == pygame.K_DOWN:
-            player.move(1, 0, grid)
+            player.move(1, 0, grid, beat)
 
 
 class PlayerViewer:
@@ -155,6 +155,13 @@ def main():
     screen = pygame.display.set_mode(canvas_size)
     grid = GridList(NUM_X, NUM_Y, canvas_size)
     clock = pygame.time.Clock()
+    FPS = 60
+    loop_num = 0
+    is_following = True
+
+    #Plays background music, BPM is about 110
+    pygame.mixer.music.load('Ghost_fight.mp3')
+    pygame.mixer.music.play(-1)
 
     running = True
     while running:
@@ -163,7 +170,11 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
-                player_controller = PlayerKeyController(event, player, grid)
+                if (loop_num % 64)<10 or (64- loop_num%64)<10:
+                    is_following = True
+                else:
+                    is_following = False
+                player_controller = PlayerKeyController(event, player, grid,is_following)
 
         # initializing viewers
         background_viewer = BackgroundViewer(screen, bg)
@@ -176,7 +187,8 @@ def main():
             msg_location = (50, 80)
             end_message_viewer = MessageViewer(screen, font, font_size, msg,
                                                msg_location)
-        clock.tick(60)
+        loop_num += 1
+        clock.tick(FPS)
         pygame.display.flip()
     pygame.quit()
 
