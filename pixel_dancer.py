@@ -14,6 +14,7 @@ NUM_Y = 6
 TOTAL_GRID = NUM_X * NUM_Y
 FPS = 60  # frames(while loops) per second
 MAX_ENERGY = 100
+ENERGY_CONSTANT = 1
 MARGINAL_ERROR = 10  # 10 frames
 
 # MUSIC PRESETS
@@ -123,8 +124,8 @@ class Player:
         absolute_y = gridlist[self.place[0]][self.place[1]].location[1]
         return (absolute_x, absolute_y)
 
-    def update_energy(self, loop_num, beat_constant):
-        dx = int(loop_num / beat_constant) / MAX_ENERGY
+    def update_energy(self):
+        dx = ENERGY_CONSTANT/BEAT_CONST
         self.energy = self.energy - dx
 
 
@@ -209,7 +210,7 @@ class EnergyViewer:
         # Decreased ENERGY
         box1_x = length - 100
         box1_y = 0
-        dy = int(height / MAX_ENERGY) * (MAX_ENERGY - current_energy)
+        dy = int((MAX_ENERGY - current_energy) / MAX_ENERGY * height)
         # drawing two rectangles
         rect1 = pygame.Rect(box1_x+0.5*box_padding,
                             box1_y, 100-box_padding, dy)
@@ -301,8 +302,7 @@ def main():
                                           MARGINAL_ERROR).flag
                 player_controller = PlayerKeyController(event, player, grid,
                                                         is_matching)
-
-        player.update_energy(loop_num, BEAT_CONST)
+        player.update_energy()
         # initializing viewers
         background_viewer = BackgroundViewer(screen, bg)
         grid_viewer = GridListViewer(screen, grid)
