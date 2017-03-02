@@ -7,9 +7,13 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
+YELLOW = (255, 255, 0)
+# GAME PRESETS
 NUM_X = 6
 NUM_Y = 6
 TOTAL_GRID = NUM_X * NUM_Y
+FPS = 60  # frames(while loops) per second
+MAX_ENERGY = 100
 
 
 class Grid(object):
@@ -66,10 +70,6 @@ class GridListViewer(object):
                 grid = grid_list.gridlist[j, i]
                 image = pygame.Surface([grid.length, grid.width])
                 image.set_alpha(grid.alpha)
-                # if (i+j) % 2 == 0:
-                #    color = BLACK
-                # else:
-                #    color = WHITE
                 image.fill(grid.color)
                 screen.blit(image, grid.location)
 
@@ -91,6 +91,7 @@ class Player:
                                              1/min(NUM_X, NUM_Y)*2)
         self.place = (place[0], place[1])
         self.flipped = False
+        self.energy = MAX_ENERGY
 
     def move(self, dx, dy, grid, beat):
         gridlist = grid.gridlist
@@ -116,6 +117,10 @@ class Player:
         absolute_x = gridlist[self.place[0]][self.place[1]].location[0]
         absolute_y = gridlist[self.place[0]][self.place[1]].location[1]
         return (absolute_x, absolute_y)
+
+    def update_energy(self, loop_num, beat_constant):
+        dx = int(loop_num / beat_constant) / MAX_ENERGY
+        self.energy = self.energy - dx
 
 
 class PlayerKeyController():
@@ -154,20 +159,22 @@ class MessageViewer:
 class RhythmViewer:
     def __init__(self, screen, rhythm, loop_num, marginal_error):
         screen_size = screen.get_rect().size
-        image = pygame.Surface(screen_size)
+        length = screen_size[0]-100
+        height = 100
+        image = pygame.Surface((length, height))
         # drawing line
-        line_start = (0, screen_size[1]-50)
-        line_end = (screen_size[0], screen_size[1]-50)
+        line_start = (0, int(height / 2))
+        line_end = (length, int(height / 2))
         line_width = 3
         pygame.draw.line(image, WHITE, line_start, line_end, line_width)
 
         # drawing two circles
         radius = 40
-        dx = (screen_size[0] - 2*radius) / rhythm / 2
+        dx = ((length) - 2*radius) / rhythm / 2
         pos = (int(line_start[0]+radius+dx*(loop_num % rhythm)), line_start[1])
-        pos2 = (int(screen_size[0]-radius-dx*(loop_num % rhythm)),
+        pos2 = (int(length-radius-dx*(loop_num % rhythm)),
                 line_start[1])
-        center = int(screen_size[0] / 2)
+        center = int(length / 2)
         if(abs(pos[0] - center) <= marginal_error/10 * dx):
             color = RED
             width = 6
@@ -179,7 +186,40 @@ class RhythmViewer:
             width = 3
         pygame.draw.circle(image, color, pos, radius, width)
         pygame.draw.circle(image, color, pos2, radius, width)
-        screen.blit(image, (0, 0))
+        screen.blit(image, (0, screen_size[1]-height))
+
+
+class EnergyViewer:
+    def __init__(self, screen, player):
+        screen_size = screen.get_rect().size
+        length = 100
+        height = screen_size[1]-100
+        current_energy = player.energy
+
+        image = pygame.Surface((length, height))
+        image2 = pygame.Surface((length, height))
+        image2.fill(WHITE)
+        box_padding = 20
+
+        # Decreased ENERGY
+        box1_x = length - 100
+        box1_y = 0
+        dy = int(height / MAX_ENERGY) * (MAX_ENERGY - current_energy)
+        # drawing two rectangles
+        rect1 = pygame.Rect(box1_x+0.5*box_padding,
+                            box1_y, 100-box_padding, dy)
+        pygame.draw.rect(image, WHITE, rect1)
+        image.set_alpha(0)  # lost energy is transparent
+
+        # ENERGY
+        box2_x = box1_x
+        box2_y = dy
+        rect2 = pygame.Rect(box2_x+0.5*box_padding, box2_y, 100-box_padding,
+                            screen_size[0] - dy)
+
+        pygame.draw.rect(image2, YELLOW, rect2)
+        screen.blit(image, (screen_size[0]-length, 0))
+        screen.blit(image2, (screen_size[0]-length, 0))
 
 class Monster:
     def __init__(self,name1,name2,max_x,max_y,num_monster,canvas_size):
@@ -226,8 +266,8 @@ def main():
     pygame.display.set_caption('PIXEL DANCER')
     # initializing background / determining canvas_size
     bg = Background('square.jpg')
-    canvas_size = bg.pic.get_rect().size
-    canvas_size2 = (canvas_size[0], canvas_size[1]+100)
+    grid_size = bg.pic.get_rect().size
+    canvas_size = (grid_size[0]+100, grid_size[1]+100)
     # initializing player
     player = Player('player.png', (0, 0))
 
@@ -237,11 +277,8 @@ def main():
 
     # initializing screen & grid & clock
     screen = pygame.display.set_mode(canvas_size)
-    rhythm_screen = pygame.display.set_mode(canvas_size2)
-    grid = GridList(NUM_X, NUM_Y, canvas_size)
-
+    grid = GridList(NUM_X, NUM_Y, grid_size)
     clock = pygame.time.Clock()
-    FPS = 60  # 60 frames(while loops) per second
     loop_num = 0
 
     # plays background music, BPM is about 110
@@ -262,9 +299,8 @@ def main():
                 player_controller = PlayerKeyController(event, player, grid,
                                                         is_matching)
 
+        player.update_energy(loop_num, BEAT_CONST)
         # initializing viewers
-        rhythm_viewer = RhythmViewer(rhythm_screen, BEAT_CONST, loop_num,
-                                     MARGINAL_ERROR)
         background_viewer = BackgroundViewer(screen, bg)
         grid_viewer = GridListViewer(screen, grid)
         if loop_num % (BEAT_CONST*2) < BEAT_CONST:
@@ -274,6 +310,9 @@ def main():
         else:
             monster_viewer = MonsterViewer(screen, monster, grid, 2)
         player_viewer = PlayerViewer(screen, player, grid)
+        energy_viewer = EnergyViewer(screen, player)
+        rhythm_viewer = RhythmViewer(screen, BEAT_CONST, loop_num,
+                                     MARGINAL_ERROR)
 
         if grid.colored_grid_count == TOTAL_GRID:  # when all grids are colored
             font = "norasi"
