@@ -13,6 +13,11 @@ NUM_Y = 6
 TOTAL_GRID = NUM_X * NUM_Y
 FPS = 60  # frames(while loops) per second
 MAX_ENERGY = 100
+MARGINAL_ERROR = 10  # 10 frames
+
+# MUSIC PRESETS
+MUSIC = 'Ghost_fight.mp3'
+BEAT_CONST = 64  # arbitrary Frames/second value proportional to BPM
 
 
 class Grid(object):
@@ -240,10 +245,8 @@ def main():
     loop_num = 0
 
     # plays background music, BPM is about 110
-    pygame.mixer.music.load('Ghost_fight.mp3')
+    pygame.mixer.music.load(MUSIC)
     pygame.mixer.music.play(-1)
-    BEAT_CONST = 64  # arbitrary Frames/second value proportional to BPM
-    MARGINAL_ERROR = 10  # 10 frames
     is_matching = True
     running = True
     while running:
