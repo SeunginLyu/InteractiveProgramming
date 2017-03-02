@@ -1,7 +1,8 @@
 import pygame
 import numpy
+import random
 
-# COLORS
+'''Global variable declaration'''
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
@@ -21,6 +22,7 @@ BEAT_CONST = 64  # arbitrary Frames/second value proportional to BPM
 
 
 class Grid(object):
+    '''This class represents a single grid in the game canvas'''
     def __init__(self, row, col, location, length, width, color=BLACK,
                  alpha=256):
         self.row = row  # relative row number in a gridlist
@@ -43,6 +45,7 @@ class Grid(object):
 
 
 class GridList(object):
+    '''This class represents the list of all the grids'''
     def __init__(self, num_rows, num_cols, grid_size):
         self.num_rows = num_rows
         self.num_cols = num_cols
@@ -223,6 +226,41 @@ class EnergyViewer:
         screen.blit(image, (screen_size[0]-length, 0))
         screen.blit(image2, (screen_size[0]-length, 0))
 
+class Monster:
+    def __init__(self,name1,name2,max_x,max_y,num_monster,canvas_size):
+        self.max_x = max_x
+        self.max_y = max_y
+        self.num_monster = num_monster
+        self.pic1 = pygame.image.load(name1)
+        self.pic1 = pygame.transform.rotozoom(self.pic1, 0,
+                                             1/min(NUM_X, NUM_Y)*2)
+        self.pic2 = pygame.image.load(name2)
+        self.pic2 = pygame.transform.rotozoom(self.pic2, 0,
+                                             1/min(NUM_X, NUM_Y)*0.7)
+        self.monsterlist = []
+
+    def randomize(self):
+        self.monsterlist = []
+        for i in range(self.num_monster):
+            x = random.randint(0,self.max_x-1)
+            y = random.randint(0,self.max_y-1)
+            while (x,y) in self.monsterlist:
+                x = random.randint(0,self.max_x-1)
+                y = random.randint(0,self.max_y-1)
+            self.monsterlist.append((x,y))
+
+class MonsterViewer:
+    def __init__(self, screen, monster ,grid, mode):
+        if mode == 1:
+            pic = monster.pic1
+            for mon_location in monster.monsterlist:
+                current_grid = grid.gridlist[mon_location]
+                screen.blit(pic,current_grid.location)
+        else:
+            pic = monster.pic2
+            for mon_location in monster.monsterlist:
+                current_grid = grid.gridlist[mon_location]
+                screen.blit(pic,current_grid.location)
 
 def main():
 
@@ -237,6 +275,10 @@ def main():
     canvas_size = (grid_size[0]+100, grid_size[1]+100)
     # initializing player
     player = Player('player.png', (0, 0))
+
+    # initializing Monster
+    num_monster = 5
+    monster = Monster('choco.png','warning.png',NUM_X, NUM_Y,num_monster,canvas_size)
 
     # initializing screen & grid & clock
     screen = pygame.display.set_mode(canvas_size)
@@ -264,6 +306,12 @@ def main():
         # initializing viewers
         background_viewer = BackgroundViewer(screen, bg)
         grid_viewer = GridListViewer(screen, grid)
+        if loop_num % (BEAT_CONST*2) < BEAT_CONST:
+            monster_viewer = MonsterViewer(screen, monster, grid, 1)
+        elif loop_num % BEAT_CONST == 0:
+            monster.randomize()
+        else:
+            monster_viewer = MonsterViewer(screen, monster, grid, 2)
         player_viewer = PlayerViewer(screen, player, grid)
         energy_viewer = EnergyViewer(screen, player)
         rhythm_viewer = RhythmViewer(screen, BEAT_CONST, loop_num,
