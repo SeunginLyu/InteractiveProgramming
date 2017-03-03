@@ -14,6 +14,12 @@ NUM_Y = 6
 TOTAL_GRID = NUM_X * NUM_Y
 FPS = 60  # frames(while loops) per second
 MAX_ENERGY = 100
+ENERGY_CONSTANT = 1
+MARGINAL_ERROR = 10  # 10 frames
+
+# MUSIC PRESETS
+MUSIC = 'Ghost_fight.mp3'
+BEAT_CONST = 64  # arbitrary Frames/second value proportional to BPM
 
 
 class Grid(object):
@@ -118,8 +124,8 @@ class Player:
         absolute_y = gridlist[self.place[0]][self.place[1]].location[1]
         return (absolute_x, absolute_y)
 
-    def update_energy(self, loop_num, beat_constant):
-        dx = int(loop_num / beat_constant) / MAX_ENERGY
+    def update_energy(self):
+        dx = ENERGY_CONSTANT/BEAT_CONST
         self.energy = self.energy - dx
 
 
@@ -282,10 +288,8 @@ def main():
     loop_num = 0
 
     # plays background music, BPM is about 110
-    pygame.mixer.music.load('Ghost_fight.mp3')
+    pygame.mixer.music.load(MUSIC)
     pygame.mixer.music.play(-1)
-    BEAT_CONST = 64  # arbitrary Frames/second value proportional to BPM
-    MARGINAL_ERROR = 10  # 10 frames
     is_matching = True
     running = True
     while running:
@@ -298,8 +302,7 @@ def main():
                                           MARGINAL_ERROR).flag
                 player_controller = PlayerKeyController(event, player, grid,
                                                         is_matching)
-
-        player.update_energy(loop_num, BEAT_CONST)
+        player.update_energy()
         # initializing viewers
         background_viewer = BackgroundViewer(screen, bg)
         grid_viewer = GridListViewer(screen, grid)
