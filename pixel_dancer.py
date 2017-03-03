@@ -201,11 +201,11 @@ class EnergyViewer:
         image2.fill(WHITE)
         box_padding = 20
 
+
+        dy = 10
         # Decreased ENERGY
         box1_x = length - 100
         box1_y = 0
-        dy = int(height / MAX_ENERGY) * (MAX_ENERGY - current_energy)
-        # drawing two rectangles
         rect1 = pygame.Rect(box1_x+0.5*box_padding,
                             box1_y, 100-box_padding, dy)
         pygame.draw.rect(image, WHITE, rect1)
@@ -217,7 +217,7 @@ class EnergyViewer:
         rect2 = pygame.Rect(box2_x+0.5*box_padding, box2_y, 100-box_padding,
                             screen_size[0] - dy)
 
-        pygame.draw.rect(image2, YELLOW, rect2)
+        pygame.draw.rect(image2, BLUE, rect2)
         screen.blit(image, (screen_size[0]-length, 0))
         screen.blit(image2, (screen_size[0]-length, 0))
 
