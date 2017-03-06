@@ -208,7 +208,7 @@ class EnergyViewer:
         box_padding = 20
 
 
-        dy = 10
+        dy = int(height / MAX_ENERGY) * (MAX_ENERGY - current_energy)
         # Decreased ENERGY
         box1_x = length - 100
         box1_y = 0
@@ -251,7 +251,7 @@ class Monster:
             self.monsterlist.append((x,y))
 
 class MonsterViewer:
-    def __init__(self, screen, monster ,grid, mode):
+    def __init__(self, screen, monster, grid, mode):
         if mode == 1:
             pic = monster.pic1
             for mon_location in monster.monsterlist:
