@@ -9,8 +9,9 @@ BLUE = (0, 0, 255)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 # GAME PRESETS
-NUM_X = 6
-NUM_Y = 6
+NUM_BG = 8
+NUM_X = 4
+NUM_Y = 4
 TOTAL_GRID = NUM_X * NUM_Y
 FPS = 60  # frames(while loops) per second
 MAX_ENERGY = 100
@@ -66,6 +67,8 @@ class GridList(object):
             grid.append(grid_row)
         self.gridlist = numpy.array(grid)
 
+    def new_grid(self,image):
+        pass
 
 class GridListViewer(object):
     def __init__(self, screen, grid_list):
@@ -81,9 +84,17 @@ class GridListViewer(object):
 
 
 class Background:
-    def __init__(self, name):
-        self.pic = pygame.image.load(name)
+    def __init__(self, name_list, num):
+        self.name_list = name_list
+        self.num = num
+        self.pic = pygame.image.load(self.name_list[self.num])
 
+    def new_background(self):
+        new_num = random.randint(1,NUM_BG)
+        while new_num == self.num:
+            new_num = random.randint(1,NUM_BG)
+        self.num = new_num
+        self.pic = pygame.image.load(self.name_list[self.num])
 
 class BackgroundViewer:
     def __init__(self, screen, background):
@@ -264,14 +275,14 @@ class MonsterViewer:
                 screen.blit(pic,current_grid.location)
 
 def main():
-
     # initializing pygame
     pygame.init()
 
     # Game Settings
     pygame.display.set_caption('PIXEL DANCER')
     # initializing background / determining canvas_size
-    bg = Background('square.jpg')
+    name_list = ['black.png','insta1.jpg','insta2.jpg','insta3.jpg','insta4.jpg','insta5.jpg','insta6.jpg','insta7.jpg','insta8.jpg']
+    bg = Background(name_list,random.randint(1,8))
     grid_size = bg.pic.get_rect().size
     canvas_size = (grid_size[0]+100, grid_size[1]+100)
     # initializing player
@@ -283,7 +294,7 @@ def main():
 
     # initializing screen & grid & clock
     screen = pygame.display.set_mode(canvas_size)
-    grid = GridList(NUM_X, NUM_Y, grid_size)
+    grid_list = GridList(NUM_X, NUM_Y, grid_size)
     clock = pygame.time.Clock()
     loop_num = 0
 
@@ -293,6 +304,11 @@ def main():
     is_matching = True
     running = True
     while running:
+        # instatiate new background and new grids
+        if grid_list.colored_grid_count % TOTAL_GRID == TOTAL_GRID:
+            grid_list.new_grid(bg.pic)
+            bg.new_background()
+
         #  checks exteral inputs
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -300,30 +316,30 @@ def main():
             if event.type == pygame.KEYDOWN:
                 is_matching = BeatHandler(loop_num, BEAT_CONST,
                                           MARGINAL_ERROR).flag
-                player_controller = PlayerKeyController(event, player, grid,
+                player_controller = PlayerKeyController(event, player, grid_list,
                                                         is_matching)
         player.update_energy()
         # initializing viewers
         background_viewer = BackgroundViewer(screen, bg)
-        grid_viewer = GridListViewer(screen, grid)
+        grid_viewer = GridListViewer(screen, grid_list)
         if loop_num % (BEAT_CONST*2) < BEAT_CONST:
-            monster_viewer = MonsterViewer(screen, monster, grid, 1)
+            monster_viewer = MonsterViewer(screen, monster, grid_list, 1)
         elif loop_num % BEAT_CONST == 0:
             monster.randomize()
         else:
-            monster_viewer = MonsterViewer(screen, monster, grid, 2)
-        player_viewer = PlayerViewer(screen, player, grid)
+            monster_viewer = MonsterViewer(screen, monster, grid_list, 2)
+        player_viewer = PlayerViewer(screen, player, grid_list)
         energy_viewer = EnergyViewer(screen, player)
         rhythm_viewer = RhythmViewer(screen, BEAT_CONST, loop_num,
                                      MARGINAL_ERROR)
 
-        if grid.colored_grid_count == TOTAL_GRID:  # when all grids are colored
-            font = "norasi"
-            font_size = 50
-            msg = "THIS IS NOT OVER"
-            msg_location = (50, 80)
-            end_message_viewer = MessageViewer(screen, font, font_size, msg,
-                                               msg_location)
+        # if grid.colored_grid_count == TOTAL_GRID:  # when all grids are colored
+        #     font = "norasi"
+        #     font_size = 50
+        #     msg = "THIS IS NOT OVER"
+        #     msg_location = (50, 80)
+        #     end_message_viewer = MessageViewer(screen, font, font_size, msg,
+        #                                        msg_location)
         loop_num += 1
         clock.tick(FPS)
         pygame.display.flip()
