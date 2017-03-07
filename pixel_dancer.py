@@ -13,14 +13,17 @@ YELLOW = (255, 255, 0)
 
 # GAME PRESETS
 NUM_BG = 8
-NUM_X = 3
-NUM_Y = 3
+NUM_X = 4
+NUM_Y = 4
 NUM_MONSTER = 5
 TOTAL_GRID = NUM_X * NUM_Y
 FPS = 60  # frames(while loops) per second
+
+#ENERGY PRESETS
 MAX_ENERGY = 100
 ENERGY_CONSTANT = 120  # energy lasts ENERGY_CONSTANT seconds
 DAMAGE = int(0.1 * MAX_ENERGY)
+BONUS = int(0.2 * MAX_ENERGY)
 MARGINAL_ERROR = 10  # 10 frames
 
 # MUSIC PRESETS
@@ -30,83 +33,111 @@ BEAT_CONST = 64  # arbitrary Frames/BEAT
 
 class Grid(object):
     '''This class represents a single grid in the game canvas'''
-    def __init__(self, row, col, location, length, width, color=BLACK,
+    def __init__(self, row, col, location, length, width, image,
                  alpha=256):
         self.row = row  # relative row number in a gridlist
         self.col = col  # relative col number in a gridlist
         self.length = length
         self.width = width
         self.location = location  # absolute location (pixels)
-        self.color = color
+        self.image = image
         self.alpha = alpha  # transparency
-
-    def __repr__(self):
-        return str(self.row) + str(self.col)
-        # return str(self.location[0]) + ',' + str(self.location[1])
-
-    def update_grid_color(self, color):
-        self.color = color
-
-    def update_grid_alpha(self, color):
-        self.color = color
 
 
 class GridList(object):
     '''This class represents the list of all the grids'''
-    def __init__(self, num_rows, num_cols, grid_size):
+    def __init__(self, num_rows, num_cols, grid_size, name_list, pic_num):
+        self.name_list = name_list
+        self.pic_num = pic_num
+        self.pic = pygame.image.load(self.name_list[self.pic_num])
         self.num_rows = num_rows
         self.num_cols = num_cols
         self.grid_size = grid_size
         self.colored_grid_count = 0
-        length = grid_size[0] / num_cols  # length of individual grid
-        width = grid_size[1] / num_rows  # width of individual grid
+        self.chop_image()
+
+    def new_grid(self,image):
+        '''Updates the grid to previous background picture'''
+        self.pic = image
+        self.chop_image()
+
+    def chop_image(self):
+        '''Chops original image and gives them to individual grids'''
+        length = self.grid_size[0] / self.num_cols  # length of individual grid
+        width = self.grid_size[1] / self.num_rows  # width of individual grid
         grid = []
-        for i in range(num_rows):
+        for i in range(self.num_rows):
             grid_row = []
-            for j in range(num_cols):
-                location_x = int((grid_size[1] / num_cols) * j)
-                location_y = int((grid_size[0] / num_rows) * i)
+            for j in range(self.num_cols):
+                chop_num =  0
+                grid_pic = self.pic
+                small_row = self.num_rows
+                small_col = self.num_cols
+                while chop_num < self.num_rows-1:
+                    chop_j, chop_i = self.find_chop_ij(j,i,small_col,small_row)
+                    location_x = int((self.grid_size[1] / self.num_cols) * chop_j)
+                    location_y = int((self.grid_size[0] / self.num_rows) * chop_i)
+                    grid_pic = pygame.transform.chop(grid_pic,(location_x,location_y,length,width))
+                    small_col -= 1
+                    small_row -= 1
+                    chop_num += 1
+                location_x = int((self.grid_size[1] / self.num_cols) * j)
+                location_y = int((self.grid_size[0] / self.num_rows) * i)
                 location = (location_x, location_y)
-                new_grid = Grid(i, j, location, length, width)
+                new_grid = Grid(i, j, location, length, width, grid_pic)
                 grid_row.append(new_grid)
+                file_name = str(i+0.1*j) +'.svg'
             grid.append(grid_row)
         self.gridlist = numpy.array(grid)
 
-    def new_grid(self,image):
-        pass
+    def find_chop_ij(self, j,i,num_cols,num_rows):
+        '''returns the number of the grid to be chopped'''
+        j = j+1
+        i = i+1
+        if j >= num_cols:
+            j = 0
+        if i >= num_rows:
+            i = 0
+        return (j,i)
+
 
 class GridListViewer(object):
+    '''This class displays the grids to be cleared'''
     def __init__(self, screen, grid_list):
         num_rows = grid_list.num_rows
         num_cols = grid_list.num_cols
         for i in range(num_cols):
             for j in range(num_rows):
                 grid = grid_list.gridlist[j, i]
-                image = pygame.Surface([grid.length, grid.width])
+                image = grid.image
                 image.set_alpha(grid.alpha)
-                image.fill(grid.color)
                 screen.blit(image, grid.location)
 
 
 class Background:
+    '''This class represents the background image'''
     def __init__(self, name_list, num):
         self.name_list = name_list
         self.num = num
         self.pic = pygame.image.load(self.name_list[self.num])
 
     def new_background(self):
+        '''Updates the background to a new random image'''
         new_num = random.randint(1,NUM_BG)
         while new_num == self.num:
             new_num = random.randint(1,NUM_BG)
         self.num = new_num
         self.pic = pygame.image.load(self.name_list[self.num])
 
+
 class BackgroundViewer:
+    '''This class displays the background'''
     def __init__(self, screen, background):
         screen.blit(background.pic, (0, 0))
 
 
 class Player:
+    '''This class represents the player that the user controls'''
     def __init__(self, name, place):
         self.pic = pygame.image.load(name)
         self.pic = pygame.transform.rotozoom(self.pic, 0,
@@ -117,6 +148,7 @@ class Player:
         self.has_energy_decreased = False
 
     def move(self, dx, dy, grid, beat):
+        '''Moves the player according to keyboard input and changes grid color'''
         gridlist = grid.gridlist
         x = self.place[0]+dx
         y = self.place[1]+dy
@@ -139,10 +171,12 @@ class Player:
         self.place = (x, y)
 
     def get_absolute_location(self, gridlist):
+        '''Returns the absolute location of the player'''
         absolute_x = gridlist[self.place[0]][self.place[1]].location[0]
         absolute_y = gridlist[self.place[0]][self.place[1]].location[1]
         return (absolute_x, absolute_y)
 
+    '''The following functions handle player-related energy change'''
     def update_energy(self):
         dx = MAX_ENERGY / FPS / ENERGY_CONSTANT
         self.energy = self.energy - dx
@@ -151,8 +185,12 @@ class Player:
         self.energy = self.energy - DAMAGE
         self.has_energy_decreased = True
 
+    def increase_energy(self):
+        self.energy = self.energy + BONUS
+
 
 class PlayerKeyController():
+    '''This class is the player controller'''
     def __init__(self, event, player, grid, beat, monster):
         if event.key == pygame.K_RIGHT:
             player.move(0, 1, grid, beat)
@@ -169,6 +207,7 @@ class PlayerKeyController():
 
 
 class BeatHandler():
+    '''This class checks whether the player follows the beat'''
     def __init__(self, loop_num, BEAT_CONST, MARGINAL_ERROR):
         beat_rate = loop_num % BEAT_CONST
         if beat_rate < MARGINAL_ERROR or BEAT_CONST-beat_rate < MARGINAL_ERROR:
@@ -178,11 +217,13 @@ class BeatHandler():
 
 
 class PlayerViewer:
+    '''This class displays the player'''
     def __init__(self, screen, player, grid):
         screen.blit(player.pic, player.get_absolute_location(grid.gridlist))
 
 
 class MessageViewer:
+    '''This class displays any message'''
     def __init__(self, screen, font, font_size, message, msg_location,
                  color=WHITE):
         myfont = pygame.font.SysFont(font, font_size, True)
@@ -191,6 +232,7 @@ class MessageViewer:
 
 
 class RhythmViewer:
+    '''This class displays the rhythm viewer at the bottom'''
     def __init__(self, screen, rhythm, loop_num, marginal_error):
         screen_size = screen.get_rect().size
         length = screen_size[0]-100
@@ -224,6 +266,7 @@ class RhythmViewer:
 
 
 class EnergyViewer:
+    '''This class displays the energy state on the right'''
     def __init__(self, screen, player):
         if(player.has_energy_decreased):
             r = random.randint(0, 255)
@@ -261,6 +304,7 @@ class EnergyViewer:
 
 
 class Monster:
+    '''This class represents the monsters(chocolates)'''
     def __init__(self,name1,name2,max_x,max_y,num_monster,canvas_size):
         self.max_x = max_x
         self.max_y = max_y
@@ -273,7 +317,9 @@ class Monster:
                                              1/min(NUM_X, NUM_Y)*0.7)
         self.monsterlist = []
         self.mode = 0
+
     def randomize(self):
+        '''Spawns the monsters at random spots'''
         self.monsterlist = []
         for i in range(self.num_monster):
             x = random.randint(0, self.max_x-1)
@@ -285,6 +331,7 @@ class Monster:
 
 
 class MonsterViewer:
+    '''This class displays the monsters'''
     def __init__(self, screen, monster, grid):
         if monster.mode == 1:
             pic = monster.pic1
@@ -299,6 +346,7 @@ class MonsterViewer:
 
 
 class CollisionHandler():
+    '''This class checks if the player collides with a monster'''
     def __init__(self, player, monsters):
         self.flag = False
         player_location = player.place
@@ -334,7 +382,7 @@ def main():
 
         # initializing screen & grid & clock
         screen = pygame.display.set_mode(canvas_size)
-        grid_list = GridList(NUM_X, NUM_Y, grid_size)
+        grid_list = GridList(NUM_X, NUM_Y, grid_size, name_list, 0)
         clock = pygame.time.Clock()
         loop_num = 0
         is_matching = True
@@ -349,9 +397,10 @@ def main():
         while running:
             # instatiate new background and new grids
             if grid_list.colored_grid_count == TOTAL_GRID:
+                player.increase_energy()
                 total_num_pic += 1
                 grid_list.colored_grid_count = 0
-                #grid_list.new_grid(bg.pic)
+                grid_list.new_grid(bg.pic)
                 bg.new_background()
 
             #  checks exteral inputs
@@ -386,13 +435,6 @@ def main():
             rhythm_viewer = RhythmViewer(screen, BEAT_CONST, loop_num,
                                          MARGINAL_ERROR)
 
-            # if grid.colored_grid_count == TOTAL_GRID:  # when all grids are colored
-            #     font = "norasi"
-            #     font_size = 50
-            #     msg = "THIS IS NOT OVER"
-            #     msg_location = (50, 80)
-            #     end_message_viewer = MessageViewer(screen, font, font_size, msg,
-            #                                        msg_location)
             loop_num += 1
             clock.tick(FPS)
             pygame.display.flip()
