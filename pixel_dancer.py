@@ -3,24 +3,29 @@ import numpy
 import random
 
 '''Global variable declaration'''
+
+# COLORS
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
+
 # GAME PRESETS
 NUM_BG = 8
-NUM_X = 4
-NUM_Y = 4
+NUM_X = 3
+NUM_Y = 3
+NUM_MONSTER = 5
 TOTAL_GRID = NUM_X * NUM_Y
 FPS = 60  # frames(while loops) per second
 MAX_ENERGY = 100
-ENERGY_CONSTANT = 1
+ENERGY_CONSTANT = 120  # energy lasts ENERGY_CONSTANT seconds
+DAMAGE = int(0.1 * MAX_ENERGY)
 MARGINAL_ERROR = 10  # 10 frames
 
 # MUSIC PRESETS
 MUSIC = 'Ghost_fight.mp3'
-BEAT_CONST = 64  # arbitrary Frames/second value proportional to BPM
+BEAT_CONST = 64  # arbitrary Frames/BEAT
 
 
 class Grid(object):
@@ -109,6 +114,7 @@ class Player:
         self.place = (place[0], place[1])
         self.flipped = False
         self.energy = MAX_ENERGY
+        self.has_energy_decreased = False
 
     def move(self, dx, dy, grid, beat):
         gridlist = grid.gridlist
@@ -120,11 +126,13 @@ class Player:
         if (dx == -1 or dy == -1) and self.flipped:
             self.pic = pygame.transform.flip(self.pic, True, False)
             self.flipped = False
-        if x < 0 or x >= NUM_X or y < 0 or y >= NUM_Y:
+        if x < 0 or x >= NUM_X or y < 0 or y >= NUM_Y:  # OUT of GRID
             x = 0
             y = 0
-        if gridlist[x][y].alpha == 256 and not beat:
+            self.decrease_energy()
+        if gridlist[x][y].alpha == 256 and not beat:  # OFF-BEAT
             gridlist[x][y].alpha /= 2
+            self.decrease_energy()
         elif (gridlist[x][y].alpha == 256 and beat) or (gridlist[x][y].alpha != 0 and gridlist[x][y].alpha != 256):
             gridlist[x][y].alpha = 0
             grid.colored_grid_count += 1
@@ -136,25 +144,34 @@ class Player:
         return (absolute_x, absolute_y)
 
     def update_energy(self):
-        dx = ENERGY_CONSTANT/BEAT_CONST
+        dx = MAX_ENERGY / FPS / ENERGY_CONSTANT
         self.energy = self.energy - dx
+
+    def decrease_energy(self):
+        self.energy = self.energy - DAMAGE
+        self.has_energy_decreased = True
 
 
 class PlayerKeyController():
-    def __init__(self, event, player, grid, beat):
+    def __init__(self, event, player, grid, beat, monster):
         if event.key == pygame.K_RIGHT:
             player.move(0, 1, grid, beat)
+            collision = CollisionHandler(player, monster)
         if event.key == pygame.K_LEFT:
             player.move(0, -1, grid, beat)
+            collision = CollisionHandler(player, monster)
         if event.key == pygame.K_UP:
             player.move(-1, 0, grid, beat)
+            collision = CollisionHandler(player, monster)
         if event.key == pygame.K_DOWN:
             player.move(1, 0, grid, beat)
+            collision = CollisionHandler(player, monster)
 
 
 class BeatHandler():
     def __init__(self, loop_num, BEAT_CONST, MARGINAL_ERROR):
-        if (loop_num % BEAT_CONST) < MARGINAL_ERROR or (BEAT_CONST-loop_num % BEAT_CONST) < MARGINAL_ERROR:
+        beat_rate = loop_num % BEAT_CONST
+        if beat_rate < MARGINAL_ERROR or BEAT_CONST-beat_rate < MARGINAL_ERROR:
             self.flag = True
         else:
             self.flag = False
@@ -208,6 +225,11 @@ class RhythmViewer:
 
 class EnergyViewer:
     def __init__(self, screen, player):
+        if(player.has_energy_decreased):
+            r = random.randint(0, 255)
+            color = (r, 0, 0)
+        else:
+            color = BLUE
         screen_size = screen.get_rect().size
         length = 100
         height = screen_size[1]-100
@@ -215,11 +237,11 @@ class EnergyViewer:
 
         image = pygame.Surface((length, height))
         image2 = pygame.Surface((length, height))
-        image2.fill(WHITE)
         box_padding = 20
-
-
-        dy = int(height / MAX_ENERGY) * (MAX_ENERGY - current_energy)
+        if(current_energy >= 0):
+            dy = int(height * (MAX_ENERGY-current_energy) / MAX_ENERGY)
+        else:
+            dy = height
         # Decreased ENERGY
         box1_x = length - 100
         box1_y = 0
@@ -228,15 +250,15 @@ class EnergyViewer:
         pygame.draw.rect(image, WHITE, rect1)
         image.set_alpha(0)  # lost energy is transparent
 
-        # ENERGY
+        # ENERGY LEFT
         box2_x = box1_x
         box2_y = dy
         rect2 = pygame.Rect(box2_x+0.5*box_padding, box2_y, 100-box_padding,
                             screen_size[0] - dy)
-
-        pygame.draw.rect(image2, BLUE, rect2)
+        pygame.draw.rect(image2, color, rect2)
         screen.blit(image, (screen_size[0]-length, 0))
         screen.blit(image2, (screen_size[0]-length, 0))
+
 
 class Monster:
     def __init__(self,name1,name2,max_x,max_y,num_monster,canvas_size):
@@ -250,29 +272,43 @@ class Monster:
         self.pic2 = pygame.transform.rotozoom(self.pic2, 0,
                                              1/min(NUM_X, NUM_Y)*0.7)
         self.monsterlist = []
-
+        self.mode = 0
     def randomize(self):
         self.monsterlist = []
         for i in range(self.num_monster):
-            x = random.randint(0,self.max_x-1)
-            y = random.randint(0,self.max_y-1)
+            x = random.randint(0, self.max_x-1)
+            y = random.randint(0, self.max_y-1)
             while (x,y) in self.monsterlist:
-                x = random.randint(0,self.max_x-1)
-                y = random.randint(0,self.max_y-1)
-            self.monsterlist.append((x,y))
+                x = random.randint(0, self.max_x-1)
+                y = random.randint(0, self.max_y-1)
+            self.monsterlist.append((x, y))
+
 
 class MonsterViewer:
-    def __init__(self, screen, monster, grid, mode):
-        if mode == 1:
+    def __init__(self, screen, monster, grid):
+        if monster.mode == 1:
             pic = monster.pic1
             for mon_location in monster.monsterlist:
                 current_grid = grid.gridlist[mon_location]
-                screen.blit(pic,current_grid.location)
+                screen.blit(pic, current_grid.location)
         else:
             pic = monster.pic2
             for mon_location in monster.monsterlist:
                 current_grid = grid.gridlist[mon_location]
-                screen.blit(pic,current_grid.location)
+                screen.blit(pic, current_grid.location)
+
+
+class CollisionHandler():
+    def __init__(self, player, monsters):
+        self.flag = False
+        player_location = player.place
+        for monster_location in monsters.monsterlist:
+            if player_location == monster_location and monsters.mode == 1:
+                self.flag = True
+                break
+        if (self.flag):
+            player.decrease_energy()
+
 
 def main():
     # initializing pygame
@@ -280,69 +316,120 @@ def main():
 
     # Game Settings
     pygame.display.set_caption('PIXEL DANCER')
-    # initializing background / determining canvas_size
-    name_list = ['black.png','insta1.jpg','insta2.jpg','insta3.jpg','insta4.jpg','insta5.jpg','insta6.jpg','insta7.jpg','insta8.jpg']
-    bg = Background(name_list,random.randint(1,8))
-    grid_size = bg.pic.get_rect().size
-    canvas_size = (grid_size[0]+100, grid_size[1]+100)
-    # initializing player
-    player = Player('player.png', (0, 0))
+    start = True
+    gameover = False
+    while (start and not gameover):
+        # initializing background / determining canvas_size
+        name_list = ['black.png','insta1.jpg','insta2.jpg','insta3.jpg','insta4.jpg','insta5.jpg','insta6.jpg','insta7.jpg','insta8.jpg']
+        bg = Background(name_list,random.randint(1,8))
+        grid_size = bg.pic.get_rect().size
+        canvas_size = (grid_size[0]+100, grid_size[1]+100)
 
-    # initializing Monster
-    num_monster = 5
-    monster = Monster('choco.png','warning.png',NUM_X, NUM_Y,num_monster,canvas_size)
+        # initializing player
+        player = Player('player.png', (0, 0))
 
-    # initializing screen & grid & clock
-    screen = pygame.display.set_mode(canvas_size)
-    grid_list = GridList(NUM_X, NUM_Y, grid_size)
-    clock = pygame.time.Clock()
-    loop_num = 0
+        # initializing Monster
+        monster = Monster('choco.png', 'warning.png', NUM_X, NUM_Y,
+                          NUM_MONSTER, canvas_size)
 
-    # plays background music, BPM is about 110
-    pygame.mixer.music.load(MUSIC)
-    pygame.mixer.music.play(-1)
-    is_matching = True
-    running = True
-    while running:
-        # instatiate new background and new grids
-        if grid_list.colored_grid_count % TOTAL_GRID == TOTAL_GRID:
-            grid_list.new_grid(bg.pic)
-            bg.new_background()
+        # initializing screen & grid & clock
+        screen = pygame.display.set_mode(canvas_size)
+        grid_list = GridList(NUM_X, NUM_Y, grid_size)
+        clock = pygame.time.Clock()
+        loop_num = 0
+        is_matching = True
+        total_num_pic = 0
 
-        #  checks exteral inputs
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+        # plays background music, BPM is about 110
+        pygame.mixer.music.load(MUSIC)
+        pygame.mixer.music.play(-1)
+        start = False
+        running = True
+
+        while running:
+            # instatiate new background and new grids
+            if grid_list.colored_grid_count == TOTAL_GRID:
+                total_num_pic += 1
+                grid_list.colored_grid_count = 0
+                #grid_list.new_grid(bg.pic)
+                bg.new_background()
+
+            #  checks exteral inputs
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                if event.type == pygame.KEYDOWN:
+                    is_matching = BeatHandler(loop_num, BEAT_CONST,
+                                              MARGINAL_ERROR).flag
+                    player_controller = PlayerKeyController(event, player, grid_list,
+                                                            is_matching, monster)
+            player.update_energy()  # constantly decrease enrgy every frame
+            if(loop_num % BEAT_CONST == 0):  # initialize the attribute every beat
+                player.has_energy_decreased = False
+            elif(not player.has_energy_decreased):
+                collision = CollisionHandler(player, monster)
+
+            # initializing viewers
+            background_viewer = BackgroundViewer(screen, bg)
+            grid_viewer = GridListViewer(screen, grid_list)
+            if loop_num % (BEAT_CONST*2) < BEAT_CONST:
+                monster.mode = 1
+                monster_viewer = MonsterViewer(screen, monster, grid_list)
+            elif loop_num % BEAT_CONST == 0:
+                monster.randomize()
+                monster.mode = 2
+                player.energy_color = BLUE
+            else:
+                monster_viewer = MonsterViewer(screen, monster, grid_list)
+            player_viewer = PlayerViewer(screen, player, grid_list)
+            energy_viewer = EnergyViewer(screen, player)
+            rhythm_viewer = RhythmViewer(screen, BEAT_CONST, loop_num,
+                                         MARGINAL_ERROR)
+
+            # if grid.colored_grid_count == TOTAL_GRID:  # when all grids are colored
+            #     font = "norasi"
+            #     font_size = 50
+            #     msg = "THIS IS NOT OVER"
+            #     msg_location = (50, 80)
+            #     end_message_viewer = MessageViewer(screen, font, font_size, msg,
+            #                                        msg_location)
+            loop_num += 1
+            clock.tick(FPS)
+            pygame.display.flip()
+
+            if player.energy <= 0:
                 running = False
-            if event.type == pygame.KEYDOWN:
-                is_matching = BeatHandler(loop_num, BEAT_CONST,
-                                          MARGINAL_ERROR).flag
-                player_controller = PlayerKeyController(event, player, grid_list,
-                                                        is_matching)
-        player.update_energy()
-        # initializing viewers
-        background_viewer = BackgroundViewer(screen, bg)
-        grid_viewer = GridListViewer(screen, grid_list)
-        if loop_num % (BEAT_CONST*2) < BEAT_CONST:
-            monster_viewer = MonsterViewer(screen, monster, grid_list, 1)
-        elif loop_num % BEAT_CONST == 0:
-            monster.randomize()
-        else:
-            monster_viewer = MonsterViewer(screen, monster, grid_list, 2)
-        player_viewer = PlayerViewer(screen, player, grid_list)
-        energy_viewer = EnergyViewer(screen, player)
-        rhythm_viewer = RhythmViewer(screen, BEAT_CONST, loop_num,
-                                     MARGINAL_ERROR)
+                gameover = True
+        screen = pygame.display.set_mode(canvas_size)
+        while(gameover):
 
-        # if grid.colored_grid_count == TOTAL_GRID:  # when all grids are colored
-        #     font = "norasi"
-        #     font_size = 50
-        #     msg = "THIS IS NOT OVER"
-        #     msg_location = (50, 80)
-        #     end_message_viewer = MessageViewer(screen, font, font_size, msg,
-        #                                        msg_location)
-        loop_num += 1
-        clock.tick(FPS)
-        pygame.display.flip()
+            font = "norasi"
+            font_size = 80
+            msg = "GAME OVER"
+            msg_location = (90, 80)
+
+            font_size2 = 30
+            msg2 = "PRESS ENTER TO PLAY AGAIN"
+            msg_location2 = (90, 480)
+
+            font_size3 = 50
+            msg3 = "Pictures Cleared : " + str(total_num_pic)
+            msg_location3 = (90, 280)
+            gameover_message = MessageViewer(screen, font, font_size, msg,
+                                             msg_location, RED)
+            gameover_message2 = MessageViewer(screen, font, font_size2, msg2,
+                                              msg_location2, BLUE)
+            gameover_message3 = MessageViewer(screen, font, font_size3, msg3,
+                                              msg_location3)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    gameover = False
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        gameover = False
+                        start = True
+            clock.tick(FPS)
+            pygame.display.flip()
     pygame.quit()
 
 
