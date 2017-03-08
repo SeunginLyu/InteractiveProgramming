@@ -1,19 +1,35 @@
+"""
+Project : Olin College Software Design Spring 2017
+By : Seungin Lyu and Yichen Jiang
+Game Name : Pixel_Dancer
+Version : 0.1
+
+Instruction : Move your doggy around with the arrow keys to paint as many
+pictures as possible. Remember, you should follow the music rhythm! If you
+aren't following the beat, you will lose your precious energy! Also, you don't
+want to go out of the picture and be careful not to eat the toxic chocolates!
+You will gain some extra energy everytime you complete one picture. Good Luck!
+(the energy decreases naturally because doggy is hungry..)
+
+"""
+
+
 import pygame
 import numpy
 import random
 
 '''Global variable declaration'''
 
-# COLORS
+# PREDEFINED COLORS
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 
-# GAME PRESETS
-NUM_BG = 8
-NUM_X = 4
+# GAME SETTINGS
+NUM_BG = 8  # Number of Background Pictures
+NUM_X = 4  # Number of 
 NUM_Y = 4
 NUM_MONSTER = 5
 TOTAL_GRID = NUM_X * NUM_Y
@@ -86,7 +102,6 @@ class GridList(object):
                 location = (location_x, location_y)
                 new_grid = Grid(i, j, location, length, width, grid_pic)
                 grid_row.append(new_grid)
-                file_name = str(i+0.1*j) +'.svg'
             grid.append(grid_row)
         self.gridlist = numpy.array(grid)
 
@@ -146,6 +161,7 @@ class Player:
         self.flipped = False
         self.energy = MAX_ENERGY
         self.has_energy_decreased = False
+        self.has_energy_increased = False
 
     def move(self, dx, dy, grid, beat):
         '''Moves the player according to keyboard input and changes grid color'''
@@ -187,6 +203,7 @@ class Player:
 
     def increase_energy(self):
         self.energy = self.energy + BONUS
+        self.has_energy_increased = True
 
 
 class PlayerKeyController():
@@ -251,7 +268,7 @@ class RhythmViewer:
         pos2 = (int(length-radius-dx*(loop_num % rhythm)),
                 line_start[1])
         center = int(length / 2)
-        if(abs(pos[0] - center) <= marginal_error/10 * dx):
+        if(abs(pos[0] - center) <= marginal_error/5 * dx):
             color = RED
             width = 6
         elif(abs(pos[0] - center) < marginal_error*dx):
@@ -271,6 +288,10 @@ class EnergyViewer:
         if(player.has_energy_decreased):
             r = random.randint(0, 255)
             color = (r, 0, 0)
+        if(player.has_energy_increased):
+            g = random.randint(0, 255)
+            b = random.randint(0, 255)
+            color = (0, g, b)
         else:
             color = BLUE
         screen_size = screen.get_rect().size
@@ -415,6 +436,7 @@ def main():
             player.update_energy()  # constantly decrease enrgy every frame
             if(loop_num % BEAT_CONST == 0):  # initialize the attribute every beat
                 player.has_energy_decreased = False
+                player.has_energy_increased = False
             elif(not player.has_energy_decreased):
                 collision = CollisionHandler(player, monster)
 
