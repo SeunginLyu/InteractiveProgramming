@@ -17,8 +17,8 @@ You can play with the game settings by manipulating the defined constants.
 """
 
 import pygame
-import random
 import config as c
+import game as g
 
 def main():
     # initializing pygame
@@ -27,15 +27,15 @@ def main():
     # Game Settings
     pygame.display.set_caption(c.TITLE)
 
-    # Default Game Status Flags
-    start = True
-    gameover = False
+    # initialize game instance from configuration file
+    config = c.config()
+    game = g.game(config)
+    game.new_game()
 
-    # Loading images & music, creating objects.
-    while (start and not gameover):
-        game = game()
+    while (game.start and not game.gameover):
+        game.start_game()
 
-        while running:
+        while game.running:
             # instatiate new background and new grids
             if grid_list.colored_grid_count == TOTAL_GRID:
                 player.increase_energy()
@@ -49,7 +49,7 @@ def main():
                 if event.type == pygame.QUIT:
                     running = False
                 if event.type == pygame.KEYDOWN:
-                    is_matching = BeatHandler(loop_num,
+                    is_matching = BeatHandler(frame_count,
                                               BEAT_CONST,
                                               MARGINAL_ERROR).flag
                     player_controller = PlayerKeyController(event,
@@ -61,7 +61,7 @@ def main():
             player.update_energy()
 
             # decrease or increase energy only once in per each beat
-            if(loop_num % BEAT_CONST == 0):
+            if(frame_count % BEAT_CONST == 0):
                 player.has_energy_decreased = False
                 player.has_energy_increased = False
             # checks if the player collides even if they player doesn't move
@@ -73,12 +73,12 @@ def main():
             background_viewer = BackgroundViewer(screen, bg)
             grid_viewer = GridListViewer(screen, grid_list)
             # Display chocolates for odd number frames
-            if loop_num % (BEAT_CONST*2) < BEAT_CONST:
+            if frame_count % (BEAT_CONST*2) < BEAT_CONST:
                 monster.mode = 1
                 monster_viewer = MonsterViewer(screen, monster, grid_list)
 
             # Display warning signs for even number frames
-            elif loop_num % BEAT_CONST == 0:
+            elif frame_count % BEAT_CONST == 0:
                 monster.randomize()
                 monster.mode = 2
                 player.energy_color = BLUE
@@ -86,21 +86,21 @@ def main():
                 monster_viewer = MonsterViewer(screen, monster, grid_list)
             player_viewer = PlayerViewer(screen, player, grid_list)
             energy_viewer = EnergyViewer(screen, player)
-            rhythm_viewer = RhythmViewer(screen, BEAT_CONST, loop_num,
+            rhythm_viewer = RhythmViewer(screen, BEAT_CONST, frame_count,
                                          MARGINAL_ERROR)
 
-            # update the loop_num(frame number) and let the time flow
-            loop_num += 1
+            # update the frame_count(frame number) and let the time flow
+            frame_count += 1
             clock.tick(FPS)
             pygame.display.flip()
 
             # when the enrgy gets to zero, move on to the gameover while loop
             if player.energy <= 0:
-                running = False
-                gameover = True
+                game.gameover()
+
 
         screen = pygame.display.set_mode(canvas_size)
-        while(gameover):
+        while(game.gameover):
 
             # displaying messages
             font = "norasi"

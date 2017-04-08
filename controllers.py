@@ -30,15 +30,15 @@ class BeatHandler(object):
     '''
     This class checks whether the player follows the beat
     '''
-    def __init__(self, loop_num, BEAT_CONST, MARGINAL_ERROR):
+    def __init__(self, frame_count, BEAT_CONST, MARGINAL_ERROR):
         """
-        Precondition : 1) Loop_num (current frame number)
+        Precondition : 1) frame_count (current frame number)
                        2) BEAT_CONST (predefined frames/beat constant)
                        3) Marginal Error (predefined allowed error of input)
         Postcondition : self.flag is True is following the beat within the
         marginal error, and False otherwise.
         """
-        beat_rate = loop_num % BEAT_CONST
+        beat_rate = frame_count % BEAT_CONST
         if beat_rate < MARGINAL_ERROR or BEAT_CONST-beat_rate < MARGINAL_ERROR:
             self.flag = True
         else:

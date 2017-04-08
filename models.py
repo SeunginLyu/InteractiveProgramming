@@ -1,5 +1,5 @@
 import numpy
-
+import pygame
 
 class Grid(object):
     '''
