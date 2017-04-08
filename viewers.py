@@ -1,13 +1,20 @@
 import pygame
 import random
-import config
 
-class GridListViewer(object):
+
+class Viewer():
+    """
+    This is the parent class for all the viewer classes
+    """
+    def __init__(self, model):
+        self.model = model
+
+
+class GridListViewer(Viewer):
     '''This class displays the GridList on the screen'''
-    def __init__(self, screen, grid_list):
-        """
-        This should be a draw() method
-        """
+
+    def draw(self, screen):
+        grid_list = self.model
         num_rows = grid_list.num_rows
         num_cols = grid_list.num_cols
         for i in range(num_cols):
@@ -18,36 +25,31 @@ class GridListViewer(object):
                 screen.blit(image, grid.location)
 
 
-class BackgroundViewer(object):
+class BackgroundViewer(Viewer):
     '''This class displays the background'''
-    def __init__(self, screen, background):
+
+    def draw(self, screen):
         """
-        This should be a draw() method
         """
-        screen.blit(background.pic, (0, 0))
+        screen.blit(self.model.pic, (0, 0))
 
 
-class PlayerViewer(object):
-    '''This class displays the player'''
-    def __init__(self, screen, player, grid):
-        screen.blit(player.pic, player.get_absolute_location(grid.gridlist))
-
-
-class MessageViewer(object):
+class MessageViewer(Viewer):
     '''This class displays any message'''
-    def __init__(self, screen, font, font_size,
-                 message, msg_location, color=WHITE):
-        myfont = pygame.font.SysFont(font, font_size, True)
-        label = myfont.render(message, True, color)
-        screen.blit(label, msg_location)
+
+    def draw(self, screen):
+        msg = self.model
+        myfont = pygame.font.SysFont(msg.font, msg.font_size, True)
+        label = myfont.render(msg.message, True, msg.color)
+        screen.blit(label, msg.msg_location)
 
 
-class RhythmViewer(object):
+class RhythmViewer(Viewer):
     '''
     This class displays the rhythm viewer at the bottom
     Two circles move towards the center to represent the beat flow
     '''
-    def __init__(self, screen, rhythm, loop_num, marginal_error):
+    def draw(self, screen, rhythm, frame_count, marginal_error):
         screen_size = screen.get_rect().size
         length = screen_size[0]-100
         height = 100  # height of the rhythm viewer
@@ -62,8 +64,8 @@ class RhythmViewer(object):
         # drawing two circles
         radius = 40
         dx = ((length) - 2*radius) / rhythm / 2
-        pos = (int(line_start[0]+radius+dx*(loop_num % rhythm)), line_start[1])
-        pos2 = (int(length-radius-dx*(loop_num % rhythm)),
+        pos = (int(line_start[0]+radius+dx*(frame_count % rhythm)), line_start[1])
+        pos2 = (int(length-radius-dx*(frame_count % rhythm)),
                 line_start[1])
         center = int(length / 2)
 
@@ -86,7 +88,7 @@ class RhythmViewer(object):
         screen.blit(image, (0, screen_size[1]-height))
 
 
-class EnergyViewer(object):
+class EnergyViewer(Viewer):
     '''
     This class displays the energy state on the right section of the screen
     by drawing two rectangles of heights 1-dy and dy.
@@ -135,18 +137,31 @@ class EnergyViewer(object):
         screen.blit(image2, (screen_size[0]-length, 0))
 
 
-class MonsterViewer(object):
+class OnGridViewer(Viewer):
+    def __init__(self, model, grid_list):
+        super().__init__(model)
+        self.grid_list = grid_list
+
+
+class PlayerViewer(OnGridViewer):
+    '''This class displays the player'''
+    def draw(self, screen):
+        screen.blit(self.model.pic,
+                    self.model.get_absolute_location(self.gridlist))
+
+
+class MonsterViewer(OnGridViewer):
     '''This class displays the monsters'''
-    def __init__(self, screen, monster, grid):
+    def draw(self, screen):
         # when the monsters are chocolates
-        if monster.mode == 1:
-            pic = monster.pic1
-            for mon_location in monster.monsterlist:
-                current_grid = grid.gridlist[mon_location]
+        if self.model.mode == 1:
+            pic = self.model.pic1
+            for mon_location in self.model.monsterlist:
+                current_grid = self.gridlist[mon_location]
                 screen.blit(pic, current_grid.location)
         # when them monsters are warning signs
         else:
-            pic = monster.pic2
-            for mon_location in monster.monsterlist:
-                current_grid = grid.gridlist[mon_location]
+            pic = self.model.pic2
+            for mon_location in self.model.monsterlist:
+                current_grid = self.gridlist[mon_location]
                 screen.blit(pic, current_grid.location)

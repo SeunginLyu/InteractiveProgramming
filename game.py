@@ -5,39 +5,46 @@ import pygame
 
 class game():
     def __init__(self, config):
+        """
+        This method initializes all the models in the game class
+        """
         # initializing background / determining canvas_size
-        self.c = config
-        self.bg = m.Background(self.c.bg_images,
-                               random.randint(1, len(self.c.bg_images))-1)
+        c = config
+        self.bg = m.Background(c.bg_images,
+                               random.randint(1, len(c.bg_images))-1)
         self.grid_size = self.bg.pic.get_rect().size
         self.canvas_size = (self.grid_size[0]+100,
                             self.grid_size[1]+100)
 
         # initializing player & Monster
-        self.player = m.Player(self.c.player_image, (0, 0))
-        self.monster = m.Monster(self.c.monster_image_1,
-                                 self.c.monster_image_2,
-                                 self.c.NUM_X,
-                                 self.c.NUM_Y,
-                                 self.c.NUM_MONSTER,
+        self.player = m.Player(c.player_image, (0, 0))
+        self.monster = m.Monster(c.monster_image_1,
+                                 c.monster_image_2,
+                                 c.NUM_X,
+                                 c.NUM_Y,
+                                 c.NUM_MONSTER,
                                  self.canvas_size)
 
         # initializing screen & grid & clock
-        self.screen = pygame.display.set_mode(self.canvas_size)
-        self.grid_list = m.GridList(self.c.NUM_X,
-                                    self.c.NUM_Y,
+        self.grid_list = m.GridList(c.NUM_X,
+                                    c.NUM_Y,
                                     self.grid_size,
-                                    self.name_list,
+                                    c.bg_images,
                                     0)
-        self.clock = pygame.time.Clock()
-        self.frame_count = 0
 
-        self.is_matching = True
-        self.total_num_pic = 0
-
-        # plays background music, BPM is about 110
+        # initializing background music, BPM is about 110
         pygame.mixer.music.load(self.c.MUSIC)
         pygame.mixer.music.play(-1)
+
+        self.frame_count = 0
+        self.rhythm = m.Rhythm(c.BEAT_CONST,
+                               self.frame_count,
+                               c.MARGINAL_ERROR)
+
+        self.total_num_pic = 0  # number of clear pictures(stages)
+
+        # initializing pygame clock
+        self.clock = pygame.time.Clock()
 
     def new_game(self):
         # Default Game Status Flags
@@ -51,3 +58,18 @@ class game():
     def game_over(self):
         self.running = False
         self.gameover = True
+
+    def quit_game(self):
+        self.running = False
+        self.start = False
+        self.gameover = False
+
+    def is_stage_complete(self):
+        return self.grid_list.colored_grid_count == self.c.TOTAL_GRID
+
+    def set_new_stage(self):
+        self.player.increase_energy()
+        self.total_num_pic += 1
+        self.grid_list.colored_grid_count = 0
+        self.grid_list.new_grid(game.bg.pic)
+        self.bg.new_background()

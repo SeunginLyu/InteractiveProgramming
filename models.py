@@ -1,5 +1,7 @@
 import numpy
+import random
 import pygame
+
 
 class Grid(object):
     '''
@@ -217,6 +219,40 @@ class Player(object):
         self.energy = self.energy + BONUS
         self.has_energy_increased = True
 
+    def has_died(self):
+        return self.energy <= 0
+
+    def CollisionHandler(self, monsters):
+        """
+        Precondition : Player object and Monster object
+        Postcondition : self.flag = True if the location of each object
+        overlaps, self.flag = False otherwise.
+        """
+        self.flag = False
+        player_location = self.place
+        # checks all the monster location to see if player is colliding with
+        # one of the mosnters
+        for monster_location in monsters.monsterlist:
+            if player_location == monster_location and monsters.mode == 1:
+                self.flag = True
+                break
+            # if two objects are colliding
+        if (self.flag):
+            self.decrease_energy()
+
+    def update(self, rhythm, monsters):
+        """
+        Updates the player attributes depdending on the current rhythm
+        """
+        self.update_energy()
+        # decrease or increase energy only once in per each beat
+        if(rhythm.beat == 0):
+            self.has_energy_decreased = False
+            self.has_energy_increased = False
+        # checks if the player collides even if they player doesn't move
+        elif(not self.has_energy_decreased):
+            self.CollisionHandler(self, monsters)
+
 
 class Monster(object):
     '''This class represents the monsters(chocolates)'''
@@ -255,3 +291,60 @@ class Monster(object):
                 x = random.randint(0, self.max_x-1)
                 y = random.randint(0, self.max_y-1)
             self.monsterlist.append((x, y))
+
+    def update(self, rhythm):
+        """
+        Updates the monster attributes depdending on the current rhythm
+        """
+        # Display chocolates for odd number frames
+        if frame_count % (BEAT_CONST*2) < BEAT_CONST:
+            monster.mode = 1
+            monster_viewer = MonsterViewer(screen, monster, grid_list)
+
+        # Display warning signs for even number frames
+        elif frame_count % BEAT_CONST == 0:
+            monster.randomize()
+            monster.mode = 2
+            player.energy_color = BLUE
+        else:
+            monster_viewer = MonsterViewer(screen, game.grid_list)
+
+
+class Message(object):
+    """
+    This is a message class
+    """
+    def __init__(self, font, font_size, message, msg_location, color):
+        self.font = font
+        self.font_size = font_size
+        self.message = message
+        self.msg_location = msg_location
+        self.color = color
+
+
+class Rhythm(object):
+    '''
+    This is a Rhythm class that contains attributes that represent
+    the conceprt of 'beat' in this game
+    Precondition : 1) frame_count (current frame number)
+                   2) BEAT_CONST (predefined frames/beat constant)
+                   3) Marginal Error (predefined allowed error of input)
+    Postcondition : self.is_matching is True is following the beat within the
+    marginal error, and False otherwise.
+    '''
+    def __init__(self, BEAT_CONST, frame_count, MARGINAL_ERROR):
+        self.beat_const = BEAT_CONST
+        self.frame_count = frame_count
+        self.mg_error = MARGINAL_ERROR
+        self.beat = self.frame_count % self.beat_const
+        self.off_beat = self.beat_const - self.beat_rate
+
+    @property
+    def is_matching(self):
+        if self.beat < self.mg_error or self.off_beat < self.mg_error:
+            return True
+        else:
+            return False
+
+    def update_frame_count(self, value):
+        self.frame_count += value
