@@ -150,8 +150,8 @@ class Player(object):
         '''
         Moves the player according dx,dy and changes grid color
         Precondition: 1) dx, dy from generated from PlayerController
-                      2) Gridlist that the player is on
-                      3) Beat (True if matching, False otherwise)
+                      2) Gridlist object that the player is on
+                      3) Rhythm object from game class
         Postcondition: the place(location) attribute of the player changes
         '''
         gridlist = grid_list.gridlist
@@ -250,7 +250,6 @@ class Player(object):
         if(rhythm.beat == 0):
             self.has_energy_decreased = False
             self.has_energy_increased = False
-            # self.energy_color = self.c.BLUE
         # checks if the player collides even if they player doesn't move
         elif(not self.has_energy_decreased):
             self.CollisionHandler(monsters)
@@ -327,7 +326,7 @@ class Message(object):
 class Rhythm(object):
     '''
     This is a Rhythm class that contains attributes that represent
-    the conceprt of 'beat' in this game
+    the concept of 'beat' in this game
     Precondition : 1) frame_count (current frame number)
                    2) BEAT_CONST (predefined frames/beat constant)
                    3) Marginal Error (predefined allowed error of input)

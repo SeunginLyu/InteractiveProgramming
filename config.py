@@ -2,7 +2,10 @@
 
 
 class config(object):
-
+    """
+    This class contains game settings and constants used in
+    all moudles of PixelDancer
+    """
     # TITLE
     TITLE = 'PIXEL DANCER'
 

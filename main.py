@@ -5,7 +5,7 @@ Game Name : Pixel_Dancer
 Version : 0.2
 Date : April 8th, 2017
 
-Instruction : Move your doggy around with the arrow keys to paint as many
+Move your doggy around with the arrow keys to paint as many
 pictures as possible. Remember, you should follow the music rhythm! If you
 aren't following the beat, you will lose your precious energy and end up
 only coloring half the grid you are on.  Also, you don't want to go out of the
@@ -26,6 +26,9 @@ import config
 
 
 def main():
+    """
+    This main function contains all the while loops of the game.
+    """
     # initialize pygame
     pygame.init()
     # Game Settings
@@ -35,9 +38,10 @@ def main():
     # initialize game instance with impofrted config.py
 
     while (True):
-        # initialize game screen
+        # initializing models in game instance speficied by config.py
         game = g.game(c)
         game.new_game()
+        # initialize game screen
         screen = pygame.display.set_mode(game.canvas_size)
         # initializes viewers :
         viewers = [v.BackgroundViewer(game.bg),
@@ -46,12 +50,10 @@ def main():
                    v.PlayerViewer(game.player, game.grid_list),
                    v.EnergyViewer(game.player),
                    v.RhythmViewer(game.rhythm)]
-
+        # intializes controller
         controller = controllers.PlayerController(game.player)
         game.start_game()
         while game.running:
-
-            # checks various game_status
             if game.player.has_died:
                 game.game_over()
             if game.is_stage_complete():
@@ -71,8 +73,7 @@ def main():
             game.rhythm.update_frame_count(1)
 
             # drawing on screen
-            for viewer in viewers:
-                viewer.draw(screen)
+            [viewer.draw(screen) for viewer in viewers]
 
             game.clock.tick(c.FPS)
             pygame.display.flip()
@@ -92,12 +93,10 @@ def main():
 
             viewers = []
             # initializing viewers
-            for msg in messages:
-                viewers.append(v.MessageViewer(msg))
+            [viewers.append(v.MessageViewer(msg)) for msg in messages]
 
             # drawing on screen
-            for viewer in viewers:
-                viewer.draw(screen)
+            [viewer.draw(screen) for viewer in viewers]
 
             # check external inputs
             for event in pygame.event.get():

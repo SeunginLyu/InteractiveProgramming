@@ -147,20 +147,30 @@ class EnergyViewer(Viewer):
 
 
 class OnGridViewer(Viewer):
+    """
+    This class inherits the Viewer class, and is the parent class of
+    any model that is displayed on a specific position on GridList Object
+    """
     def __init__(self, model, grid_list):
         super().__init__(model)
         self.grid_list = grid_list
 
 
 class PlayerViewer(OnGridViewer):
-    '''This class displays the player'''
+    '''
+    This class displays the player on the screen
+    Gets the absolute coordinate from the GridList Object
+    '''
     def draw(self, screen):
         screen.blit(self.model.pic,
                     self.model.get_absolute_location(self.grid_list))
 
 
 class MonsterViewer(OnGridViewer):
-    '''This class displays the monsters'''
+    '''
+    This class displays the monsters on the screen
+    Gets the absolute coordinate from the GridList Object
+    '''
     def draw(self, screen):
         # when the monsters are chocolates
         if self.model.mode == 1:

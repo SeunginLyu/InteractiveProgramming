@@ -4,9 +4,10 @@ import pygame
 
 
 class game():
+    "This is game class that contains the models in this game"
     def __init__(self, config):
         """
-        This method initializes all the models in the game class
+        This method initializes the models in the game class
         """
         # initializing background / determining canvas_size
         self.c = config
@@ -58,13 +59,24 @@ class game():
         self.running = True  # enters the next inner while loop
 
     def game_over(self):
+        """
+        Changes running and gameover flags to False,
+        enters the gameover while loop
+        """
         self.running = False
         self.gameover = True
 
     def is_stage_complete(self):
+        """
+        Returns True if all grids are fully colored, returns False otherwise.
+        """
         return self.grid_list.colored_grid_count == self.c.TOTAL_GRID
 
     def set_new_stage(self):
+        """
+        Sets a new stage with updated grid count,new background.
+        Extra energy is given to the player"
+        """
         self.player.increase_energy()
         self.total_num_pic += 1
         self.grid_list.colored_grid_count = 0
