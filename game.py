@@ -9,7 +9,8 @@ class game():
         This method initializes all the models in the game class
         """
         # initializing background / determining canvas_size
-        c = config
+        self.c = config
+        c = self.c
         self.bg = m.Background(c.bg_images,
                                random.randint(1, len(c.bg_images))-1)
         self.grid_size = self.bg.pic.get_rect().size
@@ -50,6 +51,7 @@ class game():
         # Default Game Status Flags
         self.start = True
         self.gameover = False
+        self.running = False
 
     def start_game(self):
         self.start = False
@@ -59,11 +61,6 @@ class game():
         self.running = False
         self.gameover = True
 
-    def quit_game(self):
-        self.running = False
-        self.start = False
-        self.gameover = False
-
     def is_stage_complete(self):
         return self.grid_list.colored_grid_count == self.c.TOTAL_GRID
 
@@ -71,5 +68,5 @@ class game():
         self.player.increase_energy()
         self.total_num_pic += 1
         self.grid_list.colored_grid_count = 0
-        self.grid_list.new_grid(game.bg.pic)
+        self.grid_list.new_grid(self.bg.pic)
         self.bg.new_background()

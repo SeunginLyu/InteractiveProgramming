@@ -24,7 +24,7 @@ class config(object):
     ENERGY_CONSTANT = 120  # energy lasts ENERGY_CONSTANT seconds(maximum)
     DAMAGE = int(0.1 * MAX_ENERGY)
     BONUS = int(0.2 * MAX_ENERGY)
-    MARGINAL_ERROR = 10  # the marginal error for following the beat
+    MARGINAL_ERROR = 15  # the marginal error for following the beat
 
     # MUSIC PRESETS
     MUSIC = './resources/Ghost_fight.mp3'  # the background music

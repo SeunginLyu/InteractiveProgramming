@@ -1,6 +1,7 @@
 import numpy
 import random
 import pygame
+import config
 
 
 class Grid(object):
@@ -114,9 +115,10 @@ class Background(object):
 
     def new_background(self):
         '''Updates the background to a new random image'''
-        new_num = random.randint(1, NUM_BG)  # randomly select picture number
+        c = config.config()
+        new_num = random.randint(1, c.NUM_BG)  # randomly select picture number
         while new_num == self.num:
-            new_num = random.randint(1, NUM_BG)
+            new_num = random.randint(1, c.NUM_BG)
         self.num = new_num
         self.pic = pygame.image.load(self.name_list[self.num])
 
@@ -131,18 +133,20 @@ class Player(object):
                        2) Location (x,y) of the Player on GridList Object
         Postcondition : Player Object
         """
+        self.c = config.config()
         self.pic = pygame.image.load(name)
         self.pic = pygame.transform.rotozoom(self.pic, 0,
-                                             1/min(NUM_X, NUM_Y)*2)
+                                             1/min(self.c.NUM_X,
+                                                   self.c.NUM_Y)*2)
         self.place = (place[0], place[1])
-        self.energy = MAX_ENERGY
+        self.energy = self.c.MAX_ENERGY
 
         # Status Flags
         self.flipped = False
         self.has_energy_decreased = False
         self.has_energy_increased = False
 
-    def move(self, dx, dy, grid_list, beat):
+    def move(self, dx, dy, grid_list, rhythm):
         '''
         Moves the player according dx,dy and changes grid color
         Precondition: 1) dx, dy from generated from PlayerController
@@ -165,18 +169,18 @@ class Player(object):
             self.flipped = False
 
         # When Player moves out of Grid, move it back to (0,0)
-        if x < 0 or x >= NUM_X or y < 0 or y >= NUM_Y:
+        if x < 0 or x >= self.c.NUM_X or y < 0 or y >= self.c.NUM_Y:
             x = 0
             y = 0
             self.decrease_energy()
 
         # when the player is not following the beat and the grid is not colored
-        if gridlist[x][y].alpha == 256 and not beat:
+        if gridlist[x][y].alpha == 256 and not rhythm.is_matching:
             gridlist[x][y].alpha /= 2
             self.decrease_energy()
 
         # when the player is following beat and the grid is not colored
-        elif (gridlist[x][y].alpha == 256 and beat):
+        elif (gridlist[x][y].alpha == 256 and rhythm.is_matching):
             gridlist[x][y].alpha = 0
             grid_list.colored_grid_count += 1
 
@@ -192,8 +196,8 @@ class Player(object):
         '''
         Returns the absolute location(pixel) of the player
         '''
-        absolute_x = gridlist[self.place[0]][self.place[1]].location[0]
-        absolute_y = gridlist[self.place[0]][self.place[1]].location[1]
+        absolute_x = gridlist.gridlist[self.place[0]][self.place[1]].location[0]
+        absolute_y = gridlist.gridlist[self.place[0]][self.place[1]].location[1]
         return (absolute_x, absolute_y)
 
     '''The following functions handle player-related energy change'''
@@ -202,23 +206,24 @@ class Player(object):
         Decreases the enrgy so that it takes "ENERGY_CONSTANT" seconds
         for the energy to naturall decrease to zero if no penalty
         """
-        dx = MAX_ENERGY / FPS / ENERGY_CONSTANT
+        dx = self.c.MAX_ENERGY / self.c.FPS / self.c.ENERGY_CONSTANT
         self.energy = self.energy - dx
 
     def decrease_energy(self):
         """
         Decreases energy by predefined DAMAGE value
         """
-        self.energy = self.energy - DAMAGE
+        self.energy = self.energy - self.c.DAMAGE
         self.has_energy_decreased = True
 
     def increase_energy(self):
         """
         Increases energy by predefined BONUS value
         """
-        self.energy = self.energy + BONUS
+        self.energy = self.energy + self.c.BONUS
         self.has_energy_increased = True
 
+    @property
     def has_died(self):
         return self.energy <= 0
 
@@ -228,17 +233,13 @@ class Player(object):
         Postcondition : self.flag = True if the location of each object
         overlaps, self.flag = False otherwise.
         """
-        self.flag = False
         player_location = self.place
         # checks all the monster location to see if player is colliding with
         # one of the mosnters
         for monster_location in monsters.monsterlist:
             if player_location == monster_location and monsters.mode == 1:
-                self.flag = True
+                self.decrease_energy()
                 break
-            # if two objects are colliding
-        if (self.flag):
-            self.decrease_energy()
 
     def update(self, rhythm, monsters):
         """
@@ -249,9 +250,10 @@ class Player(object):
         if(rhythm.beat == 0):
             self.has_energy_decreased = False
             self.has_energy_increased = False
+            # self.energy_color = self.c.BLUE
         # checks if the player collides even if they player doesn't move
         elif(not self.has_energy_decreased):
-            self.CollisionHandler(self, monsters)
+            self.CollisionHandler(monsters)
 
 
 class Monster(object):
@@ -266,15 +268,18 @@ class Monster(object):
         Postcondition : Monster Object that contains monsterlist[] with
                         randomized monster location
         """
+        self.c = config.config()
         self.max_x = max_x
         self.max_y = max_y
         self.num_monster = num_monster
         self.pic1 = pygame.image.load(name1)
         self.pic1 = pygame.transform.rotozoom(self.pic1, 0,
-                                              1/min(NUM_X, NUM_Y)*2)
+                                              1/min(self.c.NUM_X,
+                                                    self.c.NUM_Y)*2)
         self.pic2 = pygame.image.load(name2)
         self.pic2 = pygame.transform.rotozoom(self.pic2, 0,
-                                              1/min(NUM_X, NUM_Y)*0.7)
+                                              1/min(self.c.NUM_X,
+                                                    self.c.NUM_Y)*0.7)
         self.monsterlist = []  # array that contains monster location
         self.mode = 0  # mode 1 = chocolate, mode 2 = warning sign
 
@@ -297,17 +302,14 @@ class Monster(object):
         Updates the monster attributes depdending on the current rhythm
         """
         # Display chocolates for odd number frames
+        frame_count = rhythm.frame_count
+        BEAT_CONST = rhythm.beat_const
         if frame_count % (BEAT_CONST*2) < BEAT_CONST:
-            monster.mode = 1
-            monster_viewer = MonsterViewer(screen, monster, grid_list)
-
+            self.mode = 1
         # Display warning signs for even number frames
-        elif frame_count % BEAT_CONST == 0:
-            monster.randomize()
-            monster.mode = 2
-            player.energy_color = BLUE
-        else:
-            monster_viewer = MonsterViewer(screen, game.grid_list)
+        elif rhythm.beat == 0:
+            self.randomize()
+            self.mode = 2
 
 
 class Message(object):
@@ -336,15 +338,18 @@ class Rhythm(object):
         self.beat_const = BEAT_CONST
         self.frame_count = frame_count
         self.mg_error = MARGINAL_ERROR
-        self.beat = self.frame_count % self.beat_const
-        self.off_beat = self.beat_const - self.beat_rate
+        self.match = self.beat_const/self.mg_error
+
+    def update_frame_count(self, value):
+        self.frame_count += value
 
     @property
     def is_matching(self):
-        if self.beat < self.mg_error or self.off_beat < self.mg_error:
+        if self.beat < self.mg_error or (self.beat_const-self.beat) < self.mg_error:
             return True
         else:
             return False
 
-    def update_frame_count(self, value):
-        self.frame_count += value
+    @property
+    def beat(self):
+        return self.frame_count % self.beat_const

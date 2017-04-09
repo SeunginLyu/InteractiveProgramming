@@ -3,7 +3,7 @@ Project : Olin College Software Design Spring 2017
 By : Seungin Lyu and Yichen Jiang
 Game Name : Pixel_Dancer
 Version : 0.2
-Date : April 7th, 2017
+Date : April 8th, 2017
 
 Instruction : Move your doggy around with the arrow keys to paint as many
 pictures as possible. Remember, you should follow the music rhythm! If you
@@ -21,23 +21,23 @@ import pygame
 import game as g
 import models as m
 import viewers as v
-import controllers as ctrl
-import config as c
+import controllers
+import config
 
 
 def main():
     # initialize pygame
     pygame.init()
-
     # Game Settings
+    c = config.config()
     pygame.display.set_caption(c.TITLE)
 
     # initialize game instance with impofrted config.py
-    game = g.game(c)
-    game.new_game()
 
-    while (game.start and not game.gameover):
+    while (True):
         # initialize game screen
+        game = g.game(c)
+        game.new_game()
         screen = pygame.display.set_mode(game.canvas_size)
         # initializes viewers :
         viewers = [v.BackgroundViewer(game.bg),
@@ -47,7 +47,7 @@ def main():
                    v.EnergyViewer(game.player),
                    v.RhythmViewer(game.rhythm)]
 
-        controller = ctrl.PlayerController(game.player)
+        controller = controllers.PlayerController(game.player)
         game.start_game()
         while game.running:
 
@@ -60,7 +60,7 @@ def main():
             #  checks external inputs / runs controllers
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    game.quit_game()
+                    pygame.quit()
                 if event.type == pygame.KEYDOWN:
                     controller.PlayerKeyController(event,
                                                    game.grid_list,
@@ -77,6 +77,7 @@ def main():
             game.clock.tick(c.FPS)
             pygame.display.flip()
 
+        # a new screen for gameover screen
         screen = pygame.display.set_mode(game.canvas_size)
         while(game.gameover):
             # initializing models
@@ -101,7 +102,7 @@ def main():
             # check external inputs
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    game.quit_game()
+                    pygame.quit()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
                         game.new_game()
